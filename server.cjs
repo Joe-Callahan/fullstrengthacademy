@@ -12,7 +12,6 @@ const path = require('path');
 app.use(express.static(path.join(__dirname, `dist`)));
 
 const { createProfile, authentication, verifyToken, editProfile } = require('./db/profiles.cjs');
-const createExercise = require('./db/exercises.cjs');
 const createMeal = require('./db/meals.cjs');
 const createLog = require('./db/logs.cjs');
 
@@ -31,11 +30,15 @@ app.post('/api/auth/register', async(req, res) => {
 //LOGIN EXISTING USER - PRODUCES A TOKEN UPON SUCCESSFUL LOGIN
 app.post('/api/auth/login', async(req, res) => {
   const { username, password } = req.body;
-  try {
-    const token = await authentication(username, password);
-    res.send({ username: `${username}`, token: `${token}` });
-  } catch(err) {
-    res.send({message: err.message});
+  const token = await authentication(username, password);
+  if(token !== `Incorrect password. Please try again.`) {
+    try {
+      res.send({ username: `${username}`, token: `${token}` });
+    } catch(err) {
+      res.send({message: err.message});
+    }
+  } else {
+    res.send({message: `Authentication error.`});
   }
 });
 
@@ -43,7 +46,9 @@ app.post('/api/auth/login', async(req, res) => {
 app.get('/api/auth/login', async(req, res) => {
   try {
     const user = await verifyToken(req.headers.authorization);
-    res.send({message: `verified`});
+    if(user) {
+      res.send({message: `verified`});
+    }
   } catch(err) {
     res.send({message: err.message});
   }
@@ -52,13 +57,17 @@ app.get('/api/auth/login', async(req, res) => {
 //GET USER DETAILS FOR DISPLAY. REQUIRES ACCESS TOKEN TO VIEW INFORMATION.
 app.get('/api/auth/me', async(req, res) => {
   const user = await verifyToken(req.headers.authorization);
-  if(user) {
-    res.send({ 
-      fullName: `${user.fullName}`, height: `${user.height}`, 
-      weight: `${user.weight}`, age: `${user.age}`, gender: `${user.gender}` 
-    });
-  } else {
-    res.send({message: `Token required`});
+  try {
+    if(user) {
+      res.send({
+        fullName: `${user.fullName}`, height: `${user.height}`, 
+        weight: `${user.weight}`, age: `${user.age}`, gender: `${user.gender}` 
+      });
+    } else {
+      res.send({message: `user not found`});
+    }
+  } catch(err) {
+    res.send({message: err.message});
   }
 });
 
@@ -69,14 +78,15 @@ app.put('/api/auth/me', async(req, res) => {
   try {
     if(user) {
       await editProfile(user.username, fullName, height, weight, age, gender);
-      res.send({message: `Profile updated.`});
+      res.send({ username: `${user.username}`, fullName: `${fullName}`, height: `${height}`, weight: `${weight}`, age: `${age}`, gender: `${gender}` });
     } else {
-      res.send({message: `You must be logged in to do this.`});
+      res.send({message: err.message});
     }
   } catch(err) {
     res.send({message: err.message});
   }
 });
+
 
 //GET ALL LOGS (TOTAL HISTORY) CREATED BY USER. REQUIRES ACCESS TOKEN TO VIEW INFORMATION.
 app.get('/api/auth/me/logs', async(req, res) => {
@@ -123,7 +133,18 @@ app.get('/api/exercises', async(req, res) => {
   } catch(err) {
     res.send({message: err.message});
   }
-})
+});
+
+//GET EXERCISE BY ID
+app.get('/api/exercises/id/:id', async(req, res) => {
+  const selectedId = req.params.id;
+  const selectedExercise = await client.query(`SELECT * FROM exercises WHERE id=${selectedId};`);
+  try {
+    res.send(selectedExercise.rows);
+  } catch(err) {
+    res.send({message: err.message});
+  }
+});
 
 //GET ALL EXERCISES BY DIFFICULTY
 app.get('/api/exercises/difficulty/:difficulty', async(req, res) => {
@@ -162,7 +183,7 @@ app.get('/api/exercises/type/:type', async(req, res) => {
   }
 });
 
-//GET ALL EXERCISES BY TYPE & MUSCLE GROUP (FOR CUSTOMIZATION)
+//GET ALL EXERCISES BY TYPE & MUSCLE GROUP
 app.get('/api/exercises/type/:type/muscle/:muscle', async(req, res) => {
   const selectedType = req.params.type;
   const selectedMuscle = req.params.muscle;
@@ -176,7 +197,7 @@ app.get('/api/exercises/type/:type/muscle/:muscle', async(req, res) => {
   }
 });
 
-//GET ALL EXERCISES BY TYPE, MUSCLE GROUP, & DIFFICULTY (FOR EVEN MORE CUSTOMIZATION!)
+//GET ALL EXERCISES BY TYPE, MUSCLE GROUP, & DIFFICULTY
 app.get('/api/exercises/type/:type/muscle/:muscle/difficulty/:difficulty', async(req, res) => {
   const selectedType = req.params.type;
   const selectedMuscle = req.params.muscle;
@@ -192,31 +213,22 @@ app.get('/api/exercises/type/:type/muscle/:muscle/difficulty/:difficulty', async
   }
 });
 
-// POST /api/exercises - TO CREATE EXERCISES
-app.post("/api/exercises", async (req, res) => {
-  const { exerciseName, exerciseDifficulty, exerciseMuscles, exerciseType } = req.body;
-
-  try {
-    // exerciseMuscles is an array
-    const muscleGroups = Array.isArray(exerciseMuscles) ? exerciseMuscles : [exerciseMuscles];
-
-    await createExercise(
-      exerciseName,
-      exerciseDifficulty,
-      muscleGroups,  //Pass array of muscle groups
-      exerciseType
-    );
-    res.status(201).send({ message: "Exercise created successfully!" });
-  } catch (err) {
-    res.status(500).send({ error: `Error creating exercise: ${err}` });
-  }
-});
-
 //GET ALL MEALS
 app.get('/api/meals', async(req, res) => {
   const allMeals = await client.query(`SELECT * FROM meals;`);
   try {
     res.send(allMeals.rows);
+  } catch(err) {
+    res.send({message: err.message});
+  }
+});
+
+//GET MEAL BY ID
+app.get('/api/meals/id/:id', async(req, res) => {
+  const selectedId = req.params.id;
+  const selectedMeal = await client.query(`SELECT * FROM meals WHERE id=${selectedId};`);
+  try {
+    res.send(selectedMeal.rows);
   } catch(err) {
     res.send({message: err.message});
   }
@@ -238,9 +250,9 @@ app.post("/api/meals", async (req, res) => {
   const { mealName, mealFocus, mealCalories, postedByUsername } = req.body;
   try {
     await createMeal(mealName, mealFocus, mealCalories, postedByUsername);
-    res.status(201).send({ message: "Meal created successfully!" });
+    res.send({message: `${mealName} created!`});
   } catch (err) {
-    res.status(500).send({ error: `Error creating meal: ${err}` });
+    res.send({message: err.message});
   }
 });
 
@@ -249,5 +261,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(process.env.PORT, () => {
-  console.log(`Server running on port :  http://localhost:${process.env.PORT}`);
+  console.log(`Server running locally at: http://localhost:${process.env.PORT}`);
 });

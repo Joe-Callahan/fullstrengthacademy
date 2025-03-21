@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import './css-components/exercises.css';
 
 const Exercises = () => {
   const [exercises, setExercises] = useState([]);
@@ -13,9 +15,11 @@ const Exercises = () => {
   const [difficultyLevels, setDifficultyLevels] = useState([]);
   const [exerciseTypes, setExerciseTypes] = useState([]);
 
+  const getToken = localStorage.getItem('token');
+
   useEffect(() => {
     const fetchExercises = async () => {
-      let url = 'https://full-strength-academy.onrender.com/api/exercises'; // Initial URL to get all exercises - 'let' because the URL needs to be able to update as we change the filters to match the server routes.
+      let url = 'https://full-strength-academy.onrender.com/api/exercises'; // Initial URL to get all exercises
 
       try {
         const response = await fetch(url);
@@ -35,9 +39,16 @@ const Exercises = () => {
           types.add(exercise.type);
         });
 
-        setMuscleGroups([...muscles]);
-        setDifficultyLevels([...difficulties]);
-        setExerciseTypes([...types]);
+        // Sort muscle groups and exercise types alphabetically
+        setMuscleGroups([...muscles].sort());
+        setExerciseTypes([...types].sort());
+
+        // Sort difficulty levels in the custom order (easy, medium, hard)
+        setDifficultyLevels([...difficulties].sort((a, b) => {
+          const order = ['easy', 'medium', 'hard'];
+          return order.indexOf(a.toLowerCase()) - order.indexOf(b.toLowerCase());
+        }));
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -69,17 +80,17 @@ const Exercises = () => {
     }
   };
 
-  // Adding some Inline styling for buttons on this page only 
+  // Adding some Inline styling for buttons on this page only
   const getButtonStyle = (selected) => ({
-    backgroundColor: selected ? '#4caf50' : '#f0f0f0',
+    backgroundColor: selected ? '#ff4500' : '#f0f0f0',
     borderColor: selected ? '#45a049' : '#ccc',
     color: selected ? 'white' : 'black',
-    padding: '8px 16px',
+    padding: '6px 20px',
     margin: '4px',
-    fontSize: '14px',
+    fontSize: '10px',
     cursor: 'pointer',
-    borderRadius: '5px',
-    transition: 'all 0.3s ease', // I'm playing with mild CSS now that Engle has inspired me! This is the time it takes for the button to change color!
+    borderRadius: '3px',
+    transition: 'all 0.3s ease',
   });
 
   // Filter the exercises based on the selected categories
@@ -88,6 +99,9 @@ const Exercises = () => {
     (selectedDifficulties.length === 0 || selectedDifficulties.includes(exercise.difficulty)) &&
     (selectedTypes.length === 0 || selectedTypes.includes(exercise.type))
   );
+
+  // Sort the filtered exercises alphabetically by name
+  const sortedExercises = filteredExercises.sort((a, b) => a.name.localeCompare(b.name));
 
   if (loading) {
     return <div>Loading...</div>;
@@ -98,75 +112,86 @@ const Exercises = () => {
   }
 
   return (
-    <main>
-      <h2>All Exercises</h2>
+    <>
+    { getToken ? 
+    <>
+      <center><h1>All Exercises</h1></center>
 
-      <section>
-        <h3>Filters</h3>
-
+      <main className='main-exercise'>
         <section>
-          <h4>Muscle Group</h4>
-          {muscleGroups.map((muscle, index) => (
-            <button
-              key={index}
-              style={getButtonStyle(selectedMuscleGroups.includes(muscle))}
-              onClick={() => handleFilterClick('muscle', muscle)}
-            >
-              {muscle.charAt(0).toUpperCase() + muscle.slice(1)} 
-            </button>
-          ))}
-        </section>
+          <h2>Filters</h2>
+          <hr />
+          <section>
+            <h2>Muscle Group</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              {muscleGroups.map((muscle, index) => (
+                <button
+                  key={index}
+                  style={getButtonStyle(selectedMuscleGroups.includes(muscle))}
+                  onClick={() => handleFilterClick('muscle', muscle)}
+                >
+                  {muscle.charAt(0).toUpperCase() + muscle.slice(1)} 
+                </button>
+              ))}
+            </div>
+          </section>
 
-        <section>
-          <h4>Difficulty</h4>
-          {difficultyLevels.map((difficulty, index) => (
-            <button
-              key={index}
-              style={getButtonStyle(selectedDifficulties.includes(difficulty))}
-              onClick={() => handleFilterClick('difficulty', difficulty)}
-            >
-              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-            </button>
-          ))}
-        </section>
-
-        <section>
-          <h4>Type</h4>
-          {exerciseTypes.map((type, index) => (
-            <button
-              key={index}
-              style={getButtonStyle(selectedTypes.includes(type))}
-              onClick={() => handleFilterClick('type', type)}
-            >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
-            </button>
-          ))}
-        </section>
-
-        <button onClick={() => {
-          setSelectedMuscleGroups([]);
-          setSelectedDifficulties([]);
-          setSelectedTypes([]);
-        }}>Clear Filters</button>
-      </section>
-
-      <section>
-        {filteredExercises.length > 0 ? (
-          <ul>
-            {filteredExercises.map((exercise) => (
-              <article key={exercise.id}>
-                <h3>{exercise.name}</h3>
-                <p><strong>Difficulty:</strong> {exercise.difficulty}</p>
-                <p><strong>Muscle Group:</strong> {exercise.muscle_groups.join(', ')}</p>
-                <p><strong>Type:</strong> {exercise.type}</p>
-              </article>
+          <section>
+            <h2>Difficulty</h2>
+            {difficultyLevels.map((difficulty, index) => (
+              <button
+                key={index}
+                style={getButtonStyle(selectedDifficulties.includes(difficulty))}
+                onClick={() => handleFilterClick('difficulty', difficulty)}
+              >
+                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+              </button>
             ))}
-          </ul>
-        ) : (
-          <p>No exercises found with these filters.</p>
-        )}
-      </section>
-    </main>
+          </section>
+
+          <section>
+            <h2>Type</h2>
+            {exerciseTypes.map((type, index) => (
+              <button
+                key={index}
+                style={getButtonStyle(selectedTypes.includes(type))}
+                onClick={() => handleFilterClick('type', type)}
+              >
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </section>
+
+          <button onClick={() => {
+            setSelectedMuscleGroups([]);
+            setSelectedDifficulties([]);
+            setSelectedTypes([]);
+          }}>Clear Filters</button>
+        </section>
+
+        <section>
+          {sortedExercises.length > 0 ? (
+            <ul>
+              {sortedExercises.map((exercise) => (
+                <article key={exercise.id}>
+                  <h3>{exercise.name}</h3>
+                  <hr />
+                  <p><strong>Difficulty:</strong> {exercise.difficulty}</p>
+                  <p><strong>Muscle Group:</strong> {exercise.muscle_groups.join(', ')}</p>
+                  <p><strong>Type:</strong> {exercise.type}</p>
+                </article>
+              ))}
+            </ul>
+          ) : (
+            <p>No exercises found with these filters.</p>
+          )}
+        </section>
+      </main>
+    </> 
+    :
+    <h2>Please <Link to='/login'>login</Link> to view this page</h2>
+    }
+    </>
   );
 };
 

@@ -57,7 +57,7 @@ export const Bmi = () => {
   );
 
   useEffect(() => {
-    if (bmi) {
+    if (bmi && category) {
       const ctx = chartRef.current.getContext('2d');
       const chart = new Chart(ctx, {
         type: 'line',
@@ -90,12 +90,13 @@ export const Bmi = () => {
         },
       });
 
+      // Clean up chart when the component unmounts or data changes
       return () => {
         chart.destroy();
       };
     }
-  },
-    [bmi, category]);
+  }, [bmi, category]);
+
   useEffect(() => {
     const categoryMealMap = {
       'Underweight': { meal: 'protein', workout: 'strength' },
@@ -110,62 +111,60 @@ export const Bmi = () => {
       const { meal: mealGoal, workout: workoutType } = categoryMealMap[category];
 
       const fetchMealData = async () => {
-        setLoading(true);
         try {
           const mealResponse = await fetch("https://full-strength-academy.onrender.com/api/meals");
           if (!mealResponse.ok) {
-            throw new Error("Failed to fetch the meals");
+            throw new Error("Failed to fetch meals");
           }
 
           const data = await mealResponse.json();
-          // Filter meal data based on the goal (e.g., 'protein' or 'lowcal')
           const filteredMeals = data.filter(item => item.focus_goal === mealGoal);
 
           if (filteredMeals.length > 0) {
-            // Pick a random meal from the filtered list
             const randomIndex = Math.floor(Math.random() * filteredMeals.length);
-            const randomMeal = filteredMeals[randomIndex];
-            setMeal(randomMeal);
+            setMeal(filteredMeals[randomIndex]);
           } else {
-            throw new Error(`No meals found for focus goal: ${mealGoal}`);
+            throw new Error("No meals found for the given goal");
           }
         } catch (error) {
           setError(error.message);
-        } finally {
-          setLoading(false);
         }
       };
 
       const fetchWorkoutData = async () => {
-        setLoading(true);
         try {
           const workoutResponse = await fetch(`https://full-strength-academy.onrender.com/api/exercises/type/${workoutType}`);
           if (!workoutResponse.ok) {
-            throw new Error("Failed to fetch the workout data");
+            throw new Error("Failed to fetch workout data");
           }
 
           const data = await workoutResponse.json();
           if (data.length > 0) {
-            // Get a random workout from the array
             const randomIndex = Math.floor(Math.random() * data.length);
-            const randomWorkout = data[randomIndex];
-            setWorkoutData(randomWorkout);
+            setWorkoutData(data[randomIndex]);
           } else {
-            throw new Error(`No workouts found for type: ${workoutType}`);
+            throw new Error("No workouts found for the given type");
           }
         } catch (error) {
           setError(error.message);
-        } finally {
-          setLoading(false);
         }
       };
 
+      // Show loading state and ensure both fetches complete before stopping loading
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          await Promise.all([fetchMealData(), fetchWorkoutData()]);
+        } catch (error) {
+          setError("An error occurred during fetching.");
+        } finally {
+          setLoading(false); // Ensure loading is turned off after both fetches
+        }
+      };
 
-      fetchMealData();
-      fetchWorkoutData();
+      fetchData(); // Start fetching meal and workout data
     }
   }, [category]);
-
 
   const getColorByCategory = (category) => {
     const colorMap = {
@@ -178,7 +177,6 @@ export const Bmi = () => {
     };
     return colorMap[category] || '#000000';
   };
-
 
   return (
     <main id="bmi-chart-component">
@@ -196,7 +194,7 @@ export const Bmi = () => {
             {/* Meal Recommendation */}
             {loading && <p>Loading meal recommendation...</p>}
             {error && <p>Error: {error}</p>}
-            {meal && (
+            {meal && workout ? (
               <div className='mealAndWorkoutPlan'>
                 <div>
                   <h3>Recommended Meal</h3>
@@ -213,6 +211,8 @@ export const Bmi = () => {
                   <p><strong>Type:</strong> {workout.type}</p>
                 </div>
               </div>
+            ) : (
+              <p>No meal or workout data available.</p>
             )}
           </div>
           {bmi && (
@@ -229,14 +229,16 @@ export const Bmi = () => {
 };
 
 const listMuscleGroup = (workout) => {
-  return <>
-    <div>
-      <p><strong>Muscle groups:</strong></p>
-      <ul className='muscle-group'>
-        {workout.muscle_groups.map((muscle, index) => <li key={index}>{muscle}</li>)}
-      </ul>
-    </div>
-  </>
-}
+  return (
+    <>
+      <div>
+        <p><strong>Muscle groups:</strong></p>
+        <ul className='muscle-group'>
+          {workout.muscle_groups.map((muscle, index) => <li key={index}>{muscle}</li>)}
+        </ul>
+      </div>
+    </>
+  );
+};
 
 export default Bmi;

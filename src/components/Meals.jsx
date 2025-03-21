@@ -1,15 +1,16 @@
+import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import './css-components/meals.css';
 
-const Meals = () => {
-  const [meals, setMeals] = useState([]);
+const Meals = ({ meals, setMeals }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [selectedMealFocus, setSelectedMealFocus] = useState([]);
   const [selectedCalories, setSelectedCalories] = useState([]);
-
   const [mealFocusOptions, setMealFocusOptions] = useState([]);
-  const [calorieRanges, setCalorieRanges] = useState([100, 200, 300, 400, 500,]);
+  const [calorieRanges, setCalorieRanges] = useState([100, 200, 300, 400, 500]);
+
+  const getToken = localStorage.getItem('token');
 
   useEffect(() => {
     const fetchMeals = async () => {
@@ -19,6 +20,7 @@ const Meals = () => {
           throw new Error('Failed to fetch meals');
         }
         const data = await response.json();
+        data.shift(); //removes 'N/A' (first seeded item) from display.
         setMeals(data);
 
         const focusGoals = new Set();
@@ -35,9 +37,9 @@ const Meals = () => {
     };
 
     fetchMeals();
-  }, []);
+  }, [setMeals]);
 
-  // When the filters are clicked functions
+  // Handle filter button clicks
   const handleFilterClick = (category, value) => {
     let newSelection;
     if (category === 'focus') {
@@ -53,15 +55,17 @@ const Meals = () => {
     }
   };
 
-  // Filter the meals based on the selected categories
+  // Filter the meals based on selected categories
   const filteredMeals = meals.filter((meal) =>
     (selectedMealFocus.length === 0 || selectedMealFocus.includes(meal.focus_goal)) &&
     (selectedCalories.length === 0 || selectedCalories.some(calorie => meal.calories <= calorie))
   );
 
+  const sortedMeals = filteredMeals.sort((a, b) => a.name.localeCompare(b.name));
+
   // Button style inline for the selections
   const getButtonStyle = (selected) => ({
-    backgroundColor: selected ? '#4caf50' : '#f0f0f0',
+    backgroundColor: selected ?' #ff4500' : '#f0f0f0',
     borderColor: selected ? '#45a049' : '#ccc',
     color: selected ? 'white' : 'black',
     padding: '8px 16px',
@@ -81,12 +85,20 @@ const Meals = () => {
   }
 
   return (
-    <main>
-      <h2>All Meals</h2>
+    <>
+    { getToken ?
+    <>
+        <center><h2>All Meals</h2></center>  
+    <main className='main-meals'>
+      
+
+      
+
+      {/* Add "Add New Meal" button at the top */}  
 
       <section>
-        <h3>Filters</h3>
-
+        <h4>Filters</h4>
+        <hr />
         <section>
           <h4>Meal Focus</h4>
           {mealFocusOptions.map((focus, index) => (
@@ -112,17 +124,26 @@ const Meals = () => {
             </button>
           ))}
         </section>
-
+  <section>
+       
+      </section>
         <button onClick={() => {
           setSelectedMealFocus([]);
           setSelectedCalories([]);
         }}>Clear Filters</button>
+        <br />
+
+          <Link to="/add-meal">
+          <button style={{ padding: '10px 30px', fontSize: '16px', backgroundColor: '#ff4500', color: 'white', borderRadius: '5px', border: 'none' }}>
+            Add New Meal
+          </button>
+        </Link>
       </section>
 
       <section>
         {filteredMeals.length > 0 ? (
           <ul>
-            {filteredMeals.map((meal) => (
+            {sortedMeals.map((meal) => (
               <article key={meal.id}>
                 <h3>{meal.name}</h3>
                 <p><strong>Focus Goal:</strong> {meal.focus_goal}</p>
@@ -136,6 +157,11 @@ const Meals = () => {
         )}
       </section>
     </main>
+    </>
+    :
+    <h2>Please <Link to='/login'>login</Link> to view this page</h2>
+  }
+    </>
   );
 };
 

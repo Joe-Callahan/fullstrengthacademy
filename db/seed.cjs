@@ -105,6 +105,7 @@ const syncAndSeed = async() => {
   await createExercise(`Single Leg Deadlift`, `hard`, `{back, hamstrings, glutes, legs}`, `strength`);
   await createExercise(`Split Squat`, `medium`, `{back, hamstrings, glutes, legs}`, `strength`);
   
+  await createMeal(`N/A`, `N/A`, 0, `admin`);
   await createMeal(`Zoodle Soup`, `lowcal`, 100, `yoganstuff`);
   await createMeal(`Citrus Couscous Salad w/ Pistachios`, `lowcal`, 95, `yoganstuff`);
   await createMeal(`Creamy Cucumber Salad`, `lowcal`, 90, `BalancedBody`);
@@ -117,7 +118,7 @@ const syncAndSeed = async() => {
   await createMeal(`One Egg Ham Omelette`, `protein`, 97, `SourdoughSam`);
   await createMeal(`Avocado Toast`, `lowcal`, 180, `BalancedBody`);
   await createMeal(`Broccoli Salad`, `lowcal`, 120, `BalancedBody`);
-  await createMeal(`1 Cup Edamame`, `lowcal`, 180, `fullstrengthstrong`);
+  await createMeal(`Edamame (1 cup)`, `lowcal`, 180, `fullstrengthstrong`);
   await createMeal(`English Muffin w/ Cream Cheese`, `lowcal`, 155, `BalancedBody`);
   await createMeal(`English Muffin Mini Pizza`, `lowcal`, 150, `SourdoughSam`);
   await createMeal(`Quest Blueberry Protein Bar`, `protein`, 180, `fullstrengthstrong`);
@@ -155,12 +156,18 @@ const syncAndSeed = async() => {
   await createMeal(`Philly Cheesesteak Stuffed Peppers`, `protein`, 450, `swollpatrol`);
   await createMeal(`Beef Pad Thai`, `lowcal`, 470, `quackracer6`);
   await createMeal(`Sheet Pan Steak, Potatoes & Asparagus`, `lowcal`, 490, `joecallahan`);
+  await createMeal(`Oreos`, `Cheat Day!`, 650, 'bad.influence')
 
   await createProfile(`test`, `password`, `Test User`, 64, 130, 85, `female`);
-  await createProfile(`joecallahan`, `grizzly`, `Joe Callahan`, 70, 260, 34, `male`);
-  await createProfile(`yoganstuff`, `meditate`, `Jim Yoga`, 72, 175, 40, `male`);
+  await createProfile(`gymyoga`, `meditate`, `Jim Yoga`, 72, 175, 40, `male`);
 
-  await createLog(`joecallahan`, 1, 3, 5, 12, 315, 15, `2025-03-11`);
+  await createLog(`test`, 4, 31, 5, 12, 525, 30, `2025-03-10`);
+  await createLog(`test`, 1, 3, 5, 12, 315, 15, `2025-03-11`);
+  await createLog(`test`, 7, 15, 4, 10, 200, 20, `2025-03-12`);
+  await createLog(`test`, 3, 10, null, null, null, 60, `2025-03-13`);
+  await createLog(`test`, 12, 22, null, null, null, 60, `2025-03-14`);
+  await createLog(`test`, 30, 30, 7, 21, 50, 30, `2025-03-15`);
+
   await client.end();
 }
 

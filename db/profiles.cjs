@@ -10,29 +10,29 @@ const createProfile = async(usernameChoice, password, userFullName, userHeight, 
       VALUES ('${usernameChoice}', '${encryptedPwd}', '${userFullName}', ${userHeight}, ${userWeight}, ${userAge}, '${userGender}');
       `);
   } catch(err) {
-    console.log(`CREATEPROFILE ERROR MESSAGE: ${err}`);
+    return err.message;
   }
 }
 
 const authentication = async(username, password) => {
   try {
     const { rows } = await client.query(`
-        SELECT * FROM profiles WHERE username='${username}';
-      `);
-      const authenticatedUser = rows[0];
-      if (authenticatedUser) {
-        const isPassword = await bcrypt.compare(password, authenticatedUser.password);
-        if(isPassword) {
-          const token = await jwt.sign({username: authenticatedUser.username}, process.env.JWT_SECRET);
-          return token;
-        } else {
-          throw new Error(`Incorrect password. Please try again.`);
-        }
+      SELECT * FROM profiles WHERE username='${username}';
+    `);
+    const authenticatedUser = rows[0];
+    if (authenticatedUser) {
+      const isPassword = await bcrypt.compare(password, authenticatedUser.password);
+      if(isPassword) {
+        const token = await jwt.sign({username: authenticatedUser.username}, process.env.JWT_SECRET);
+        return token;
       } else {
-        throw new Error(`Incorrect password. Please try again.`);
+        return `Incorrect password. Please try again.`;
       }
-    } catch(err) {
-    console.log(`AUTHENTICATION ERROR MESSAGE: ${err}`);
+    } else {
+      return `Incorrect password. Please try again.`;
+    }
+  } catch(err) {
+    return `Incorrect password. Please try again.`;
   }
 }
 
@@ -49,10 +49,10 @@ const verifyToken = async(token) => {
           weight: verifiedUser.weight_pounds, age: verifiedUser.age, gender: verifiedUser.gender
       }
     } else {
-      throw new Error(`VERIFIYTOKEN ERROR`);
+      return `Token verification issue. Please try again.`;
     }
   } catch(err) {
-    console.log(`VERIFYTOKEN ERROR MESSAGE: ${err}`);
+    return err.message;
   }
 }
 
@@ -65,7 +65,7 @@ const editProfile = async(editingUsername, fullName, height, weight, ageUpdate, 
         WHERE username='${editingUsername}';
     `);
   } catch(err) {
-    console.log(`EDITPROFILE ERROR MESSAGE: ${err}`);
+    return err.message;
   }
 }
 
