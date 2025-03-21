@@ -289,8 +289,3 @@ const LogsComponent = () => {
 };
 
 export default LogsComponent;
-
-
-// {console.log(log.exercise_id)}
-//               {console.log(log)}
-//               {console.log(exercisesArray)}
